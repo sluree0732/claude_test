@@ -20,6 +20,7 @@ from datetime import datetime
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ def health_check(request):
 
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/accounts/login/', permanent=False)),
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health'),
     path('accounts/', include('accounts.urls', namespace='accounts')),
