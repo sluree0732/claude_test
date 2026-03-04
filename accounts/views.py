@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
-from django.core.exceptions import ValidationError
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -30,10 +31,20 @@ class RegisterView(View):
             user = form.save()
             sheets.create_user_record(user.username, user.email)
             return redirect('accounts:login')
-        # Mask username enumeration: replace duplicate-username error with generic message
-        if form.errors.get('username'):
-            form.errors['username'] = ['입력하신 정보를 다시 확인해주세요.']
         return render(request, 'accounts/register.html', {'form': form})
+
+
+class CheckUsernameView(View):
+    def get(self, request):
+        username = request.GET.get('username', '').strip()
+        if not username:
+            return JsonResponse({'available': False, 'message': '아이디를 입력해주세요.'})
+        if len(username) < 4:
+            return JsonResponse({'available': False, 'message': '아이디는 4자 이상이어야 합니다.'})
+        exists = User.objects.filter(username=username).exists()
+        if exists:
+            return JsonResponse({'available': False, 'message': '이미 사용 중인 아이디입니다.'})
+        return JsonResponse({'available': True, 'message': '사용 가능한 아이디입니다.'})
 
 
 class LogoutView(View):
