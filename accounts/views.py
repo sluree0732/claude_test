@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 
+from board import sheets
 from .forms import RegisterForm
 
 
@@ -26,7 +27,8 @@ class RegisterView(View):
     def post(self, request):
         form = RegisterForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save()
+            sheets.create_user_record(user.username, user.email)
             return redirect('accounts:login')
         # Mask username enumeration: replace duplicate-username error with generic message
         if form.errors.get('username'):

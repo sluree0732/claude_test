@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SPREADSHEET_ID = '133HEXK5lNUPmYXxbtNSHKsp69hW1NGPs4-3HMDa6604'
 SHEET_NAME = 'board'
+USERS_SHEET_NAME = 'users'
 
 SCOPES = [
     'https://spreadsheets.google.com/feeds',
@@ -17,6 +18,7 @@ SCOPES = [
 
 # 헤더 행 정의
 HEADERS = ['id', 'title', 'content', 'author', 'created_at']
+USER_HEADERS = ['id', 'username', 'email', 'date_joined']
 
 
 def _get_client():
@@ -51,6 +53,36 @@ def _get_sheet():
         sheet.append_row(HEADERS)
 
     return sheet
+
+
+def _get_users_sheet():
+    """users 시트를 가져온다. 없으면 생성한다."""
+    client = _get_client()
+    spreadsheet = client.open_by_key(SPREADSHEET_ID)
+
+    try:
+        sheet = spreadsheet.worksheet(USERS_SHEET_NAME)
+    except gspread.WorksheetNotFound:
+        sheet = spreadsheet.add_worksheet(title=USERS_SHEET_NAME, rows=1000, cols=len(USER_HEADERS))
+        sheet.append_row(USER_HEADERS)
+
+    return sheet
+
+
+def create_user_record(username: str, email: str) -> dict:
+    """회원가입 시 사용자 정보를 Google Sheets에 저장한다."""
+    from datetime import datetime
+
+    sheet = _get_users_sheet()
+    rows = sheet.get_all_records()
+
+    existing_ids = [int(r['id']) for r in rows if str(r.get('id', '')).isdigit()]
+    next_id = max(existing_ids, default=0) + 1
+
+    date_joined = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    sheet.append_row([next_id, username, email, date_joined])
+
+    return {'id': next_id, 'username': username, 'email': email, 'date_joined': date_joined}
 
 
 def get_all_posts():
