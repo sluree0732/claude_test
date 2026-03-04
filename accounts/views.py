@@ -7,6 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 
 from board import sheets
+from .backends import SheetsUser
 from .forms import RegisterForm
 
 
@@ -42,8 +43,10 @@ class RegisterView(View):
                 form.add_error('username', '이미 사용 중인 아이디입니다.')
                 return render(request, 'accounts/register.html', {'form': form})
 
-            sheets.create_user_record(username, email, password)
-            return redirect('accounts:login')
+            record = sheets.create_user_record(username, email, password)
+            new_user = SheetsUser(record['id'], username, email)
+            login(request, new_user, backend='accounts.backends.SheetsAuthBackend')
+            return redirect('dashboard:index')
         return render(request, 'accounts/register.html', {'form': form})
 
 

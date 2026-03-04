@@ -56,12 +56,18 @@ def _get_sheet():
 
 
 def _get_users_sheet():
-    """users 시트를 가져온다. 없으면 생성한다."""
+    """users 시트를 가져온다. 없으면 생성, 헤더가 구형이면 재생성한다."""
     client = _get_client()
     spreadsheet = client.open_by_key(SPREADSHEET_ID)
 
     try:
         sheet = spreadsheet.worksheet(USERS_SHEET_NAME)
+        # password 컬럼이 없으면 시트를 재생성
+        headers = sheet.row_values(1)
+        if 'password' not in headers:
+            spreadsheet.del_worksheet(sheet)
+            sheet = spreadsheet.add_worksheet(title=USERS_SHEET_NAME, rows=1000, cols=len(USER_HEADERS))
+            sheet.append_row(USER_HEADERS)
     except gspread.WorksheetNotFound:
         sheet = spreadsheet.add_worksheet(title=USERS_SHEET_NAME, rows=1000, cols=len(USER_HEADERS))
         sheet.append_row(USER_HEADERS)
