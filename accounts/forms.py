@@ -1,30 +1,31 @@
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from django import forms
 
 
-class RegisterForm(UserCreationForm):
-    email = forms.EmailField(required=True)
+class RegisterForm(forms.Form):
+    username = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={'autocomplete': 'username'}),
+    )
+    email = forms.EmailField()
+    password1 = forms.CharField(
+        label='비밀번호',
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+    )
+    password2 = forms.CharField(
+        label='비밀번호 확인',
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+    )
 
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'password1', 'password2')
-        widgets = {
-            'username': forms.TextInput(attrs={'autocomplete': 'username'}),
-        }
+    def clean_username(self):
+        username = self.cleaned_data.get('username', '').strip()
+        if len(username) < 4:
+            raise forms.ValidationError('아이디는 4자 이상이어야 합니다.')
+        return username
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['password1'].widget = forms.PasswordInput(
-            attrs={'autocomplete': 'new-password'}
-        )
-        self.fields['password2'].widget = forms.PasswordInput(
-            attrs={'autocomplete': 'new-password'}
-        )
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        if commit:
-            user.save()
-        return user
+    def clean(self):
+        cleaned_data = super().clean()
+        p1 = cleaned_data.get('password1')
+        p2 = cleaned_data.get('password2')
+        if p1 and p2 and p1 != p2:
+            raise forms.ValidationError('비밀번호가 일치하지 않습니다.')
+        return cleaned_data

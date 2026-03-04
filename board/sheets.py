@@ -18,7 +18,7 @@ SCOPES = [
 
 # 헤더 행 정의
 HEADERS = ['id', 'title', 'content', 'author', 'created_at']
-USER_HEADERS = ['id', 'username', 'email', 'date_joined']
+USER_HEADERS = ['id', 'username', 'email', 'password', 'date_joined']
 
 
 def _get_client():
@@ -69,7 +69,7 @@ def _get_users_sheet():
     return sheet
 
 
-def create_user_record(username: str, email: str) -> dict:
+def create_user_record(username: str, email: str, password: str) -> dict:
     """회원가입 시 사용자 정보를 Google Sheets에 저장한다."""
     from datetime import datetime
 
@@ -80,9 +80,29 @@ def create_user_record(username: str, email: str) -> dict:
     next_id = max(existing_ids, default=0) + 1
 
     date_joined = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    sheet.append_row([next_id, username, email, date_joined])
+    sheet.append_row([next_id, username, email, password, date_joined])
 
     return {'id': next_id, 'username': username, 'email': email, 'date_joined': date_joined}
+
+
+def get_user_by_username(username: str) -> dict | None:
+    """username으로 사용자를 조회한다."""
+    sheet = _get_users_sheet()
+    rows = sheet.get_all_records()
+    for row in rows:
+        if row.get('username') == username:
+            return row
+    return None
+
+
+def get_user_by_id(user_id: int) -> dict | None:
+    """id로 사용자를 조회한다."""
+    sheet = _get_users_sheet()
+    rows = sheet.get_all_records()
+    for row in rows:
+        if str(row.get('id')) == str(user_id):
+            return row
+    return None
 
 
 def get_all_posts():

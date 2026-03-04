@@ -1,7 +1,5 @@
-from django.contrib.auth import logout
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.contrib.auth.views import LoginView
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
@@ -12,12 +10,20 @@ from board import sheets
 from .forms import RegisterForm
 
 
-class CustomLoginView(LoginView):
-    template_name = 'accounts/login.html'
-    redirect_authenticated_user = True
+class CustomLoginView(View):
+    def get(self, request):
+        if request.user.is_authenticated:
+            return redirect('dashboard:index')
+        return render(request, 'accounts/login.html')
 
-    def get_success_url(self):
-        return reverse_lazy('dashboard:index')
+    def post(self, request):
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user, backend='accounts.backends.SheetsAuthBackend')
+            return redirect('dashboard:index')
+        return render(request, 'accounts/login.html', {'error': '아이디 또는 비밀번호가 올바르지 않습니다.'})
 
 
 class RegisterView(View):
@@ -28,23 +34,17 @@ class RegisterView(View):
     def post(self, request):
         form = RegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            sheets.create_user_record(user.username, user.email)
+            username = form.cleaned_data['username']
+            email = form.cleaned_data['email']
+            password = form.cleaned_data['password1']
+
+            if sheets.get_user_by_username(username):
+                form.add_error('username', '이미 사용 중인 아이디입니다.')
+                return render(request, 'accounts/register.html', {'form': form})
+
+            sheets.create_user_record(username, email, password)
             return redirect('accounts:login')
         return render(request, 'accounts/register.html', {'form': form})
-
-
-class CheckUsernameView(View):
-    def get(self, request):
-        username = request.GET.get('username', '').strip()
-        if not username:
-            return JsonResponse({'available': False, 'message': '아이디를 입력해주세요.'})
-        if len(username) < 4:
-            return JsonResponse({'available': False, 'message': '아이디는 4자 이상이어야 합니다.'})
-        exists = User.objects.filter(username=username).exists()
-        if exists:
-            return JsonResponse({'available': False, 'message': '이미 사용 중인 아이디입니다.'})
-        return JsonResponse({'available': True, 'message': '사용 가능한 아이디입니다.'})
 
 
 class LogoutView(View):
@@ -57,3 +57,15 @@ class LogoutView(View):
 class MyPageView(View):
     def get(self, request):
         return render(request, 'accounts/mypage.html')
+
+
+class CheckUsernameView(View):
+    def get(self, request):
+        username = request.GET.get('username', '').strip()
+        if not username:
+            return JsonResponse({'available': False, 'message': '아이디를 입력해주세요.'})
+        if len(username) < 4:
+            return JsonResponse({'available': False, 'message': '아이디는 4자 이상이어야 합니다.'})
+        if sheets.get_user_by_username(username):
+            return JsonResponse({'available': False, 'message': '이미 사용 중인 아이디입니다.'})
+        return JsonResponse({'available': True, 'message': '사용 가능한 아이디입니다.'})

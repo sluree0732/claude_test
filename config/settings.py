@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
-import dj_database_url
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -32,7 +31,6 @@ ALLOWED_HOSTS = _allowed.split(',') if _allowed else (['localhost', '127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -42,6 +40,12 @@ INSTALLED_APPS = [
     'dashboard',
     'board',
 ]
+
+# Google Sheets 기반 커스텀 인증 백엔드
+AUTHENTICATION_BACKENDS = ['accounts.backends.SheetsAuthBackend']
+
+# 세션을 쿠키에 저장 (DB 불필요)
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
@@ -78,18 +82,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# DATABASE_URL 환경변수가 있으면 PostgreSQL(Render), 없으면 로컬 SQLite
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES = {'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)}
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+# Database (Django 내부용 최소 설정 — 실제 데이터는 Google Sheets에 저장)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
+}
 
 
 # Password validation
