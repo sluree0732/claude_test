@@ -6,6 +6,13 @@ import sys
 
 def main():
     """Run administrative tasks."""
+    # .env 파일 자동 로드 (개발 환경용)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
     try:
         from django.core.management import execute_from_command_line

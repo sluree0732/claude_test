@@ -24,7 +24,7 @@ if not SECRET_KEY:
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-_allowed = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+_allowed = os.environ.get('DJANGO_ALLOWED_HOSTS', '*')
 ALLOWED_HOSTS = _allowed.split(',') if _allowed else (['localhost', '127.0.0.1'] if DEBUG else [])
 
 
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'dashboard',
+    'board',
 ]
 
 LOGIN_URL = '/accounts/login/'
@@ -47,6 +48,7 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # 정적 파일 서빙 (운영 환경)
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -117,9 +119,20 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
+# Static files
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 운영 환경 보안 설정 (DEBUG=False 시 자동 활성화)
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 3600
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True

@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import ValidationError
 from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views import View
 
 from .forms import RegisterForm
@@ -36,3 +38,9 @@ class LogoutView(View):
     def post(self, request):
         logout(request)
         return redirect('accounts:login')
+
+
+@method_decorator(login_required, name='dispatch')
+class MyPageView(View):
+    def get(self, request):
+        return render(request, 'accounts/mypage.html')
