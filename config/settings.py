@@ -41,9 +41,6 @@ INSTALLED_APPS = [
     'board',
 ]
 
-# Google Sheets 기반 커스텀 인증 백엔드
-AUTHENTICATION_BACKENDS = ['accounts.backends.SheetsAuthBackend']
-
 # 세션을 쿠키에 저장 (DB 불필요)
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
@@ -57,7 +54,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.SheetsAuthMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

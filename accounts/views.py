@@ -1,14 +1,23 @@
-from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
 
 from board import sheets
 from .backends import SheetsUser
 from .forms import RegisterForm
+
+
+def _session_login(request, user):
+    """세션에 사용자 ID를 저장한다."""
+    request.session['_sheets_user_id'] = user.id
+    request.user = user
+
+
+def _session_logout(request):
+    """세션에서 사용자 정보를 제거한다."""
+    request.session.flush()
 
 
 class CustomLoginView(View):
@@ -20,10 +29,13 @@ class CustomLoginView(View):
     def post(self, request):
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user, backend='accounts.backends.SheetsAuthBackend')
+
+        user_data = sheets.get_user_by_username(username)
+        if user_data and user_data.get('password') == password:
+            user = SheetsUser(user_data['id'], user_data['username'], user_data['email'])
+            _session_login(request, user)
             return redirect('dashboard:index')
+
         return render(request, 'accounts/login.html', {'error': '아이디 또는 비밀번호가 올바르지 않습니다.'})
 
 
@@ -44,15 +56,16 @@ class RegisterView(View):
                 return render(request, 'accounts/register.html', {'form': form})
 
             record = sheets.create_user_record(username, email, password)
-            new_user = SheetsUser(record['id'], username, email)
-            login(request, new_user, backend='accounts.backends.SheetsAuthBackend')
+            user = SheetsUser(record['id'], username, email)
+            _session_login(request, user)
             return redirect('dashboard:index')
+
         return render(request, 'accounts/register.html', {'form': form})
 
 
 class LogoutView(View):
     def post(self, request):
-        logout(request)
+        _session_logout(request)
         return redirect('accounts:login')
 
 
