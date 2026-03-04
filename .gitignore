@@ -9,3 +9,7 @@ db.sqlite3
 .coverage
 htmlcov/
 .claude/
+
+# Google service account credentials
+*.json
+!package.json

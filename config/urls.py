@@ -14,11 +14,25 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import logging
+from datetime import datetime
+
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
+
+logger = logging.getLogger(__name__)
+
+
+def health_check(request):
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    logger.info('[WAKE] 서버 활성 확인 - %s', now)
+    return JsonResponse({'status': 'ok', 'time': now})
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', health_check, name='health'),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('board/', include('board.urls', namespace='board')),

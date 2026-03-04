@@ -1,15 +1,15 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.views import View
 
 from .forms import PostForm
-from .models import Post
+from . import sheets
 
 
 class BoardListView(View):
     def get(self, request):
-        posts = Post.objects.select_related('author').all()
+        posts = sheets.get_all_posts()
         return render(request, 'board/list.html', {'posts': posts})
 
 
@@ -22,14 +22,19 @@ class PostCreateView(View):
     def post(self, request):
         form = PostForm(request.POST)
         if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
+            sheets.create_post(
+                title=form.cleaned_data['title'],
+                content=form.cleaned_data['content'],
+                author=request.user.username,
+            )
             return redirect('board:list')
         return render(request, 'board/create.html', {'form': form})
 
 
 class PostDetailView(View):
     def get(self, request, pk):
-        post = get_object_or_404(Post, pk=pk)
+        post = sheets.get_post(pk)
+        if post is None:
+            from django.http import Http404
+            raise Http404('게시글을 찾을 수 없습니다.')
         return render(request, 'board/detail.html', {'post': post})
